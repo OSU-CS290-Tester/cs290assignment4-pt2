@@ -23,8 +23,30 @@ if(isset($_POST['DeleteAll']) && ($_POST['DeleteAll'] == "Delete ALL Videos")){
     $db->query("DELETE FROM video_store");
     die("<br>All records deleted");
 }
-else
-    echo "<br> Nothing to delete today!";
+
+
+/* DELETE ONE OPTION */
+if(isset($_GET['deleteVid']) && ($_GET['deleteVid'] != NULL) && ($_GET['deleteVid'] != '')){
+    $delete_this = $_GET['deleteVid'];
+    
+    $stmt = $db->prepare("DELETE FROM video_store WHERE name=?");
+    $stmt->bind_param('s', $delete_this);
+    $stmt->execute();
+    
+    echo "<br>Deleting " . $delete_this . "<br>";
+}
+
+/* TOGGLE AVAILABILITY OPTION */
+if(isset($_GET['toggleVid']) && ($_GET['toggleVid'] != NULL) && ($_GET['toggleVid'] != '')){
+    $toggle_this = $_GET['toggleVid'];
+    
+    $stmt = $db->prepare("UPDATE video_store SET rented = NOT rented WHERE name=?");
+    $stmt->bind_param('s', $toggle_this);
+    $stmt->execute();
+    
+    echo "<br>Changing availability of " . $toggle_this . "<br>";
+}
+
 
 $missingInfo = false; //boolean to check for missing parameters
 if($_POST){
@@ -61,7 +83,6 @@ if($missingInfo)
     echo"<br>ERROR: Missing required information";
 
 
-
 /* INSERT the newly added video into the database using prepared statements */
 $stmt = $db->prepare("INSERT INTO video_store(name, category, length) VALUES(?, ?, ?)");
 $stmt->bind_param('ssi', $name, $category, $length);
@@ -86,8 +107,12 @@ echo "<th>Name</th>";
 echo "<th>Cateogry</th>";
 echo "<th>Length</th>";
 echo "<th>Availability</th>";
+echo "<th>Delete Video</th>";
+echo "<th>Change Availability</th>";
 echo "</tr>"; //close top row
 
+
+echo "<form action='database.php' method='get'>"; // create form in the table for the delete and toggle part
 if($filter == ''){
     $result = $db->query("SELECT * FROM video_store"); //get the database contents  
 }
@@ -99,15 +124,19 @@ else{
 }
 while($row = $result->fetch_object()){
     echo "<tr>"; // create one row per movie
-    echo "<td>" . $row->name . "</td><td>" . $row->category . "</td><td>" . $row->length . "</td>";
+    echo "<td>" . $row->name . "</td><td>" . $row->category . "</td><td>" . $row->length . "</td>" ;
 
     if($row->rented)
         echo "<td>Available</td>";
     else
         echo "<td>Checked Out</td>";
-
+    
+    echo "<td><input type='submit' name='deleteVid' value='$row->name'></input></td>"; //create deleteVid button
+    echo "<td><input type='submit' name='toggleVid' value='$row->name'></input></td>"; //create change availability
+    
     echo "</tr>";
 }
+echo "</form>";
 echo "</table>"; //close the table
 $result->free(); // frees memory associated with the returned result
 
